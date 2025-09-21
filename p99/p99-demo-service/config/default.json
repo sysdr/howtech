@@ -1,0 +1,4 @@
+{
+  "port": ${APP_PORT},
+  "env": "${ENVIRONMENT}"
+}

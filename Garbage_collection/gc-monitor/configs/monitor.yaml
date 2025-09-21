@@ -1,0 +1,20 @@
+monitor:
+  collection_interval: 100ms
+  history_size: 1000
+  api_port: 8080
+
+thresholds:
+  yellow:
+    heap_utilization: 60
+    allocation_rate: 20971520  # 20MB/s
+  orange:
+    heap_utilization: 75
+    allocation_rate: 52428800  # 50MB/s
+  red:
+    heap_utilization: 90
+    allocation_rate: 104857600 # 100MB/s
+
+emergency_actions:
+  yellow: ["log_warning"]
+  orange: ["preemptive_gc", "alert"]
+  red: ["emergency_gc", "circuit_breaker", "alert"]
