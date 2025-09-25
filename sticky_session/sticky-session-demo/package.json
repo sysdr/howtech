@@ -1,25 +1,20 @@
 {
   "name": "sticky-session-demo",
   "version": "1.0.0",
-  "description": "Demonstrating sticky session failures and stateless solutions",
-  "main": "src/server.js",
+  "description": "Demonstration of sticky session problems and stateless solutions",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/server.js",
-    "test": "node tests/session-test.js",
-    "sticky": "node src/sticky-server.js",
-    "stateless": "node src/stateless-server.js",
-    "load-balancer": "node src/load-balancer.js"
+    "sticky": "node sticky-servers/server.js",
+    "stateless": "node stateless-servers/server.js",
+    "load-balancer": "node shared/load-balancer.js",
+    "test": "node shared/test-client.js"
   },
   "dependencies": {
-    "connect-redis": "^7.1.0",
-    "cors": "^2.8.5",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
+    "connect-redis": "^7.1.0",
     "redis": "^4.6.7",
-    "uuid": "^9.0.0"
-  },
-  "devDependencies": {
-    "axios": "^1.12.2",
-    "http-proxy-middleware": "^3.0.5"
+    "http-proxy-middleware": "^2.0.6",
+    "axios": "^1.4.0"
   }
 }
