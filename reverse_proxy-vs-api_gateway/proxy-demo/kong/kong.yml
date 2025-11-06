@@ -1,0 +1,34 @@
+_format_version: "3.0"
+
+services:
+  - name: backend-service
+    url: http://nginx:80
+    routes:
+      - name: backend-route
+        paths:
+          - /api
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 10
+          policy: local
+      - name: key-auth
+        config:
+          key_names:
+            - apikey
+          hide_credentials: true
+      - name: correlation-id
+        config:
+          header_name: X-Request-ID
+          echo_downstream: true
+
+consumers:
+  - username: demo-user
+    keyauth_credentials:
+      - key: demo-api-key-12345
+
+plugins:
+  - name: prometheus
+    config:
+      status_code_metrics: true
+      latency_metrics: true
