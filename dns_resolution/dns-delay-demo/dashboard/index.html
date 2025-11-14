@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNS Resolution Delay Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: #1a202c;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 1.1em;
+        }
+        
+        .controls {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        .delay-value {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1.2em;
+            margin-top: 10px;
+        }
+        
+        .demo-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+        
+        .demo-button:active {
+            transform: translateY(0);
+        }
+        
+        .demo-button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .demo-status {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+        
+        .demo-status.active {
+            display: block;
+        }
+        
+        .demo-status-text {
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .demo-status-desc {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border-left: 5px solid #667eea;
+        }
+        
+        .stat-card.warning {
+            border-left-color: #f6ad55;
+        }
+        
+        .stat-card.danger {
+            border-left-color: #fc8181;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            color: #1a202c;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .stat-unit {
+            color: #718096;
+            font-size: 0.6em;
+            margin-left: 5px;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .chart-card canvas {
+            max-height: 300px;
+        }
+        
+        .chart-title {
+            color: #2d3748;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .service-metrics {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .service-row {
+            display: grid;
+            grid-template-columns: 150px repeat(4, 1fr);
+            gap: 20px;
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            align-items: center;
+        }
+        
+        .service-row:last-child {
+            border-bottom: none;
+        }
+        
+        .service-name {
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 1.1em;
+        }
+        
+        .metric {
+            text-align: center;
+        }
+        
+        .metric-label {
+            font-size: 0.85em;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .service-row {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 DNS Resolution Delay Monitor</h1>
+            <p class="subtitle">Watch how DNS delays cascade through your microservices in real-time</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="dnsDelay">DNS Delay Injection (milliseconds)</label>
+                <input type="range" id="dnsDelay" min="0" max="1000" value="0" step="50">
+                <div class="delay-value">Current Delay: <span id="delayValue">0</span> ms</div>
+                <button id="demoButton" class="demo-button">🎬 Run Full DNS Delay Demo</button>
+                <div id="demoStatus" class="demo-status">
+                    <div class="demo-status-text" id="demoStatusText">Demo Running...</div>
+                    <div class="demo-status-desc" id="demoStatusDesc">Please wait while we demonstrate DNS delay impact</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card" id="latencyCard">
+                <div class="stat-label">Average Latency</div>
+                <div class="stat-value"><span id="avgLatency">0</span><span class="stat-unit">ms</span></div>
+            </div>
+            <div class="stat-card" id="dnsCard">
+                <div class="stat-label">DNS Resolution Time</div>
+                <div class="stat-value"><span id="dnsTime">0</span><span class="stat-unit">ms</span></div>
+            </div>
+            <div class="stat-card" id="threadCard">
+                <div class="stat-label">Thread Utilization</div>
+                <div class="stat-value"><span id="threadUtil">0</span><span class="stat-unit">%</span></div>
+            </div>
+            <div class="stat-card" id="errorCard">
+                <div class="stat-label">Error Rate</div>
+                <div class="stat-value"><span id="errorRate">0</span><span class="stat-unit">%</span></div>
+            </div>
+        </div>
+        
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-title">Request Latency Over Time</div>
+                <canvas id="latencyChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">Thread Pool Utilization</div>
+                <canvas id="threadChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="service-metrics">
+            <h2 style="margin-bottom: 20px; color: #2d3748;">Service Metrics</h2>
+            <div class="service-row" style="background: #f7fafc; font-weight: 600;">
+                <div class="service-name">Service</div>
+                <div class="metric">Requests</div>
+                <div class="metric">Avg Latency</div>
+                <div class="metric">DNS Time</div>
+                <div class="metric">Errors</div>
+            </div>
+            <div class="service-row">
+                <div class="service-name">Frontend</div>
+                <div class="metric"><span id="frontendReqs">0</span></div>
+                <div class="metric"><span id="frontendLatency">0</span> ms</div>
+                <div class="metric"><span id="frontendDns">0</span> ms</div>
+                <div class="metric"><span id="frontendErrors">0</span>%</div>
+            </div>
+            <div class="service-row">
+                <div class="service-name">Backend</div>
+                <div class="metric"><span id="backendReqs">0</span></div>
+                <div class="metric"><span id="backendLatency">0</span> ms</div>
+                <div class="metric"><span id="backendDns">0</span> ms</div>
+                <div class="metric"><span id="backendErrors">0</span>%</div>
+            </div>
+            <div class="service-row">
+                <div class="service-name">Database</div>
+                <div class="metric"><span id="databaseReqs">0</span></div>
+                <div class="metric"><span id="databaseLatency">0</span> ms</div>
+                <div class="metric">N/A</div>
+                <div class="metric">0%</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Chart setup
+        const latencyCtx = document.getElementById('latencyChart').getContext('2d');
+        const threadCtx = document.getElementById('threadChart').getContext('2d');
+        
+        const latencyChart = new Chart(latencyCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Latency (ms)',
+                    data: [],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        const threadChart = new Chart(threadCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Thread Utilization (%)',
+                    data: [],
+                    borderColor: '#f6ad55',
+                    backgroundColor: 'rgba(246, 173, 85, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // DNS delay control
+        const dnsDelaySlider = document.getElementById('dnsDelay');
+        const delayValue = document.getElementById('delayValue');
+        const demoButton = document.getElementById('demoButton');
+        const demoStatus = document.getElementById('demoStatus');
+        const demoStatusText = document.getElementById('demoStatusText');
+        const demoStatusDesc = document.getElementById('demoStatusDesc');
+        
+        let isDemoRunning = false;
+        
+        async function setDNSDelay(delay) {
+            try {
+                await fetch('http://localhost:5380/control/delay', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({delay_ms: parseInt(delay)})
+                });
+                dnsDelaySlider.value = delay;
+                delayValue.textContent = delay;
+            } catch (err) {
+                console.error('Failed to set DNS delay:', err);
+            }
+        }
+        
+        dnsDelaySlider.addEventListener('input', async (e) => {
+            if (!isDemoRunning) {
+                const delay = e.target.value;
+                await setDNSDelay(delay);
+            }
+        });
+        
+        // Demo function
+        async function runDemo() {
+            if (isDemoRunning) return;
+            
+            isDemoRunning = true;
+            demoButton.disabled = true;
+            demoStatus.classList.add('active');
+            dnsDelaySlider.disabled = true;
+            
+            const steps = [
+                { delay: 0, duration: 3000, message: 'Baseline: Normal operation (0ms delay)', desc: 'Observing baseline metrics...' },
+                { delay: 50, duration: 4000, message: 'Minor delay: 50ms DNS delay', desc: 'Small impact on latency...' },
+                { delay: 100, duration: 4000, message: 'Moderate delay: 100ms DNS delay', desc: 'Latency increasing...' },
+                { delay: 200, duration: 5000, message: 'Significant delay: 200ms DNS delay', desc: 'Thread utilization rising...' },
+                { delay: 300, duration: 6000, message: 'High delay: 300ms DNS delay', desc: 'Noticeable performance degradation...' },
+                { delay: 500, duration: 7000, message: 'Severe delay: 500ms DNS delay', desc: 'High latency and thread saturation...' },
+                { delay: 300, duration: 4000, message: 'Recovery: Reducing to 300ms', desc: 'Starting recovery...' },
+                { delay: 200, duration: 4000, message: 'Recovery: Reducing to 200ms', desc: 'Metrics improving...' },
+                { delay: 100, duration: 4000, message: 'Recovery: Reducing to 100ms', desc: 'System stabilizing...' },
+                { delay: 50, duration: 4000, message: 'Recovery: Reducing to 50ms', desc: 'Almost back to normal...' },
+                { delay: 0, duration: 5000, message: 'Recovery complete: 0ms delay', desc: 'System fully recovered!' }
+            ];
+            
+            for (let i = 0; i < steps.length; i++) {
+                const step = steps[i];
+                demoStatusText.textContent = step.message;
+                demoStatusDesc.textContent = step.desc;
+                
+                await setDNSDelay(step.delay);
+                await new Promise(resolve => setTimeout(resolve, step.duration));
+            }
+            
+            demoStatusText.textContent = 'Demo Complete!';
+            demoStatusDesc.textContent = 'You can now manually adjust the DNS delay using the slider above.';
+            
+            setTimeout(() => {
+                demoStatus.classList.remove('active');
+                isDemoRunning = false;
+                demoButton.disabled = false;
+                dnsDelaySlider.disabled = false;
+            }, 3000);
+        }
+        
+        demoButton.addEventListener('click', runDemo);
+        
+        // Update metrics
+        async function updateMetrics() {
+            try {
+                const [frontend, backend, database] = await Promise.all([
+                    fetch('http://localhost:8080/metrics').then(r => r.json()),
+                    fetch('http://localhost:8081/metrics').then(r => r.json()),
+                    fetch('http://localhost:8082/metrics').then(r => r.json())
+                ]);
+                
+                // Update summary stats
+                document.getElementById('avgLatency').textContent = Math.round(frontend.avg_latency_ms);
+                document.getElementById('dnsTime').textContent = Math.round(frontend.avg_dns_ms);
+                document.getElementById('threadUtil').textContent = Math.round(frontend.thread_utilization);
+                document.getElementById('errorRate').textContent = frontend.error_rate.toFixed(1);
+                
+                // Update stat card colors
+                updateCardColor('latencyCard', frontend.avg_latency_ms, 100, 300);
+                updateCardColor('dnsCard', frontend.avg_dns_ms, 50, 200);
+                updateCardColor('threadCard', frontend.thread_utilization, 70, 90);
+                updateCardColor('errorCard', frontend.error_rate, 5, 15);
+                
+                // Update service metrics
+                document.getElementById('frontendReqs').textContent = frontend.request_count;
+                document.getElementById('frontendLatency').textContent = Math.round(frontend.avg_latency_ms);
+                document.getElementById('frontendDns').textContent = Math.round(frontend.avg_dns_ms);
+                document.getElementById('frontendErrors').textContent = frontend.error_rate.toFixed(1);
+                
+                document.getElementById('backendReqs').textContent = backend.request_count;
+                document.getElementById('backendLatency').textContent = Math.round(backend.avg_latency_ms);
+                document.getElementById('backendDns').textContent = Math.round(backend.avg_dns_ms);
+                document.getElementById('backendErrors').textContent = backend.error_rate.toFixed(1);
+                
+                document.getElementById('databaseReqs').textContent = database.request_count;
+                document.getElementById('databaseLatency').textContent = Math.round(database.avg_latency_ms);
+                
+                // Update charts
+                const now = new Date().toLocaleTimeString();
+                if (latencyChart.data.labels.length > 30) {
+                    latencyChart.data.labels.shift();
+                    latencyChart.data.datasets[0].data.shift();
+                    threadChart.data.labels.shift();
+                    threadChart.data.datasets[0].data.shift();
+                }
+                
+                latencyChart.data.labels.push(now);
+                latencyChart.data.datasets[0].data.push(frontend.avg_latency_ms);
+                latencyChart.update('none');
+                
+                threadChart.data.labels.push(now);
+                threadChart.data.datasets[0].data.push(frontend.thread_utilization);
+                threadChart.update('none');
+                
+            } catch (err) {
+                console.error('Failed to fetch metrics:', err);
+            }
+        }
+        
+        function updateCardColor(cardId, value, warningThreshold, dangerThreshold) {
+            const card = document.getElementById(cardId);
+            card.classList.remove('warning', 'danger');
+            if (value >= dangerThreshold) {
+                card.classList.add('danger');
+            } else if (value >= warningThreshold) {
+                card.classList.add('warning');
+            }
+        }
+        
+        // Start updating
+        setInterval(updateMetrics, 1000);
+        updateMetrics();
+    </script>
+</body>
+</html>

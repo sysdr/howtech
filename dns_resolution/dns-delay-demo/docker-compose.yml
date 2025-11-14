@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  dns:
+    build: ./dns-server
+    container_name: dns-server
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.2
+    ports:
+      - "5380:5380"
+    cap_add:
+      - NET_ADMIN
+  
+  database:
+    build: ./database
+    container_name: database
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.12
+    ports:
+      - "8082:8082"
+    dns:
+      - 172.20.0.2
+    depends_on:
+      - dns
+  
+  backend:
+    build: ./backend
+    container_name: backend
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.11
+    ports:
+      - "8081:8081"
+    dns:
+      - 172.20.0.2
+    depends_on:
+      - dns
+      - database
+  
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    networks:
+      app-network:
+        ipv4_address: 172.20.0.10
+    ports:
+      - "8080:8080"
+    dns:
+      - 172.20.0.2
+    depends_on:
+      - dns
+      - backend
+  
+  loadgen:
+    build: ./loadgen
+    container_name: loadgen
+    networks:
+      - app-network
+    dns:
+      - 172.20.0.2
+    depends_on:
+      - frontend
+  
+  dashboard:
+    build: ./dashboard
+    container_name: dashboard
+    networks:
+      - app-network
+    ports:
+      - "3000:80"
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
