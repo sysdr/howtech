@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L4 vs L7 Load Balancer Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b68ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: #888;
+            margin-top: 10px;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .panel-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        .l4-color { color: #00d4ff; }
+        .l7-color { color: #7b68ee; }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-l4 {
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+        
+        .badge-l7 {
+            background: rgba(123, 104, 238, 0.2);
+            color: #7b68ee;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .metric-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+        
+        .metric-unit {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #00d4ff, #7b68ee);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .log-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.8rem;
+        }
+        
+        .log-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-time {
+            color: #666;
+        }
+        
+        .log-server {
+            color: #00d4ff;
+        }
+        
+        .log-latency {
+            color: #4ade80;
+        }
+        
+        .comparison {
+            grid-column: span 2;
+            text-align: center;
+        }
+        
+        .comparison-chart {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 40px;
+            height: 200px;
+            margin-top: 20px;
+        }
+        
+        .bar-container {
+            text-align: center;
+        }
+        
+        .bar {
+            width: 80px;
+            border-radius: 8px 8px 0 0;
+            transition: height 0.5s ease;
+        }
+        
+        .bar-l4 {
+            background: linear-gradient(180deg, #00d4ff, #0099cc);
+        }
+        
+        .bar-l7 {
+            background: linear-gradient(180deg, #7b68ee, #5a4fcf);
+        }
+        
+        .bar-label {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .bar-value {
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background: #4ade80;
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+        }
+        
+        .status-offline {
+            background: #f87171;
+        }
+        
+        .full-width {
+            grid-column: span 2;
+        }
+        
+        .info-box {
+            background: rgba(0, 212, 255, 0.1);
+            border-left: 3px solid #00d4ff;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-top: 15px;
+        }
+        
+        .info-box h4 {
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+        
+        .info-box p {
+            font-size: 0.85rem;
+            color: #aaa;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>L4 vs L7 Load Balancer Demo</h1>
+        <p>Real-time performance comparison for video streaming and API gateway scenarios</p>
+    </div>
+    
+    <div class="container">
+        <!-- L4 Panel - Video Streaming -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title l4-color">
+                    <span class="status-indicator status-online"></span>
+                    Layer 4 - Video Streaming
+                </span>
+                <span class="badge badge-l4">TCP Mode</span>
+            </div>
+            
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Avg Latency</div>
+                    <div class="metric-value l4-color" id="l4-latency">--</div>
+                    <div class="metric-unit">microseconds</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Throughput</div>
+                    <div class="metric-value" id="l4-throughput">--</div>
+                    <div class="metric-unit">req/sec</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Total Requests</div>
+                    <div class="metric-value" id="l4-requests">0</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Data Served</div>
+                    <div class="metric-value" id="l4-data">0</div>
+                    <div class="metric-unit">MB</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-primary" onclick="runL4Test()">Run Video Test</button>
+                <button class="btn-secondary" onclick="clearL4Logs()">Clear Logs</button>
+            </div>
+            
+            <div class="log-container" id="l4-logs">
+                <div class="log-entry">Ready to stream video chunks...</div>
+            </div>
+            
+            <div class="info-box">
+                <h4>Why L4 for Video?</h4>
+                <p>No HTTP parsing overhead. Packets pass through at wire speed. Perfect for long-lived, high-bandwidth connections where routing decisions happen once.</p>
+            </div>
+        </div>
+        
+        <!-- L7 Panel - API Gateway -->
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title l7-color">
+                    <span class="status-indicator status-online"></span>
+                    Layer 7 - API Gateway
+                </span>
+                <span class="badge badge-l7">HTTP Mode</span>
+            </div>
+            
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">Avg Latency</div>
+                    <div class="metric-value l7-color" id="l7-latency">--</div>
+                    <div class="metric-unit">milliseconds</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Throughput</div>
+                    <div class="metric-value" id="l7-throughput">--</div>
+                    <div class="metric-unit">req/sec</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Total Requests</div>
+                    <div class="metric-value" id="l7-requests">0</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Routes Used</div>
+                    <div class="metric-value" id="l7-routes">0/3</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-primary" onclick="runL7Test()">Run API Test</button>
+                <button class="btn-secondary" onclick="clearL7Logs()">Clear Logs</button>
+            </div>
+            
+            <div class="log-container" id="l7-logs">
+                <div class="log-entry">Ready to route API requests...</div>
+            </div>
+            
+            <div class="info-box">
+                <h4>Why L7 for APIs?</h4>
+                <p>URL-based routing to different services. Header inspection for auth. Health checks that verify app logic. The overhead pays for itself in functionality.</p>
+            </div>
+        </div>
+        
+        <!-- Comparison Chart -->
+        <div class="panel comparison">
+            <div class="panel-header">
+                <span class="panel-title">Performance Comparison</span>
+            </div>
+            
+            <div class="comparison-chart">
+                <div class="bar-container">
+                    <div class="bar bar-l4" id="l4-bar" style="height: 20px;"></div>
+                    <div class="bar-label">L4 Latency</div>
+                    <div class="bar-value" id="l4-bar-value">-- µs</div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar bar-l7" id="l7-bar" style="height: 20px;"></div>
+                    <div class="bar-label">L7 Latency</div>
+                    <div class="bar-value" id="l7-bar-value">-- ms</div>
+                </div>
+            </div>
+            
+            <p style="margin-top: 20px; color: #888;">
+                Note: L4 shows microseconds (µs), L7 shows milliseconds (ms). 
+                1ms = 1000µs
+            </p>
+        </div>
+        
+        <!-- How to Use -->
+        <div class="panel full-width">
+            <div class="panel-header">
+                <span class="panel-title">Understanding the Demo</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4 style="color: #00d4ff; margin-bottom: 10px;">L4 Video Streaming Test</h4>
+                    <p style="font-size: 0.85rem; color: #aaa; line-height: 1.6;">
+                        Simulates fetching 100KB video chunks through an L4 (TCP) load balancer. 
+                        No HTTP parsing - just raw packet forwarding. Watch the microsecond-level latency.
+                    </p>
+                </div>
+                <div>
+                    <h4 style="color: #7b68ee; margin-bottom: 10px;">L7 API Gateway Test</h4>
+                    <p style="font-size: 0.85rem; color: #aaa; line-height: 1.6;">
+                        Routes requests to /users, /orders, /products based on URL path inspection.
+                        The L7 load balancer parses HTTP and routes intelligently. Note the millisecond latency.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let l4Requests = 0;
+        let l7Requests = 0;
+        let l4TotalLatency = 0;
+        let l7TotalLatency = 0;
+        let l4DataServed = 0;
+        let routesUsed = new Set();
+        
+        const routes = ['/users', '/orders', '/products'];
+        
+        function addLog(container, message, type = '') {
+            const log = document.getElementById(container);
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            
+            // Keep only last 50 entries
+            while (log.children.length > 50) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        async function runL4Test() {
+            const iterations = 20;
+            addLog('l4-logs', `Starting ${iterations} video chunk requests...`);
+            
+            for (let i = 0; i < iterations; i++) {
+                const start = performance.now();
+                
+                try {
+                    const response = await fetch('http://localhost:8080/chunk/' + i);
+                    const data = await response.arrayBuffer();
+                    
+                    const latency = (performance.now() - start) * 1000; // Convert to microseconds
+                    l4Requests++;
+                    l4TotalLatency += latency;
+                    l4DataServed += data.byteLength;
+                    
+                    const server = response.headers.get('X-Server-ID') || 'unknown';
+                    addLog('l4-logs', 
+                        `Chunk ${i+1}: <span class="log-server">${server}</span> - ` +
+                        `<span class="log-latency">${latency.toFixed(0)}µs</span> - ${(data.byteLength/1024).toFixed(0)}KB`
+                    );
+                    
+                    updateL4Metrics();
+                } catch (err) {
+                    addLog('l4-logs', `Error: ${err.message}`);
+                }
+                
+                await new Promise(r => setTimeout(r, 50));
+            }
+            
+            addLog('l4-logs', `Completed ${iterations} requests`);
+        }
+        
+        async function runL7Test() {
+            const iterations = 20;
+            addLog('l7-logs', `Starting ${iterations} API requests...`);
+            
+            for (let i = 0; i < iterations; i++) {
+                const route = routes[i % routes.length];
+                const start = performance.now();
+                
+                try {
+                    const response = await fetch('http://localhost:8081' + route);
+                    const data = await response.json();
+                    
+                    const latency = performance.now() - start; // Already in milliseconds
+                    l7Requests++;
+                    l7TotalLatency += latency;
+                    routesUsed.add(route);
+                    
+                    const server = response.headers.get('X-Server-ID') || 'unknown';
+                    addLog('l7-logs', 
+                        `${route}: <span class="log-server">${server}</span> - ` +
+                        `<span class="log-latency">${latency.toFixed(2)}ms</span>`
+                    );
+                    
+                    updateL7Metrics();
+                } catch (err) {
+                    addLog('l7-logs', `Error: ${err.message}`);
+                }
+                
+                await new Promise(r => setTimeout(r, 50));
+            }
+            
+            addLog('l7-logs', `Completed ${iterations} requests`);
+        }
+        
+        function updateL4Metrics() {
+            const avgLatency = l4Requests > 0 ? l4TotalLatency / l4Requests : 0;
+            document.getElementById('l4-latency').textContent = avgLatency.toFixed(0);
+            document.getElementById('l4-requests').textContent = l4Requests;
+            document.getElementById('l4-data').textContent = (l4DataServed / (1024 * 1024)).toFixed(2);
+            document.getElementById('l4-throughput').textContent = l4Requests > 0 ? 
+                (l4Requests / (l4TotalLatency / 1000000)).toFixed(0) : '--';
+            
+            // Update chart
+            const barHeight = Math.min(avgLatency / 50, 180);
+            document.getElementById('l4-bar').style.height = barHeight + 'px';
+            document.getElementById('l4-bar-value').textContent = avgLatency.toFixed(0) + ' µs';
+        }
+        
+        function updateL7Metrics() {
+            const avgLatency = l7Requests > 0 ? l7TotalLatency / l7Requests : 0;
+            document.getElementById('l7-latency').textContent = avgLatency.toFixed(2);
+            document.getElementById('l7-requests').textContent = l7Requests;
+            document.getElementById('l7-routes').textContent = routesUsed.size + '/3';
+            document.getElementById('l7-throughput').textContent = l7Requests > 0 ? 
+                (l7Requests / (l7TotalLatency / 1000)).toFixed(0) : '--';
+            
+            // Update chart (convert ms to comparable scale)
+            const barHeight = Math.min(avgLatency * 20, 180);
+            document.getElementById('l7-bar').style.height = barHeight + 'px';
+            document.getElementById('l7-bar-value').textContent = avgLatency.toFixed(2) + ' ms';
+        }
+        
+        function clearL4Logs() {
+            document.getElementById('l4-logs').innerHTML = '<div class="log-entry">Logs cleared</div>';
+            l4Requests = 0;
+            l4TotalLatency = 0;
+            l4DataServed = 0;
+            updateL4Metrics();
+        }
+        
+        function clearL7Logs() {
+            document.getElementById('l7-logs').innerHTML = '<div class="log-entry">Logs cleared</div>';
+            l7Requests = 0;
+            l7TotalLatency = 0;
+            routesUsed.clear();
+            updateL7Metrics();
+        }
+    </script>
+</body>
+</html>

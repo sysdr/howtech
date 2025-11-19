@@ -1,0 +1,136 @@
+services:
+  # Video streaming servers (L4 backends)
+  video-server-1:
+    build:
+      context: ./backend/video-server
+    environment:
+      - SERVER_ID=video-1
+      - PORT=3001
+    networks:
+      - lb-network
+
+  video-server-2:
+    build:
+      context: ./backend/video-server
+    environment:
+      - SERVER_ID=video-2
+      - PORT=3001
+    networks:
+      - lb-network
+
+  video-server-3:
+    build:
+      context: ./backend/video-server
+    environment:
+      - SERVER_ID=video-3
+      - PORT=3001
+    networks:
+      - lb-network
+
+  # API microservices (L7 backends)
+  api-users-1:
+    build:
+      context: ./backend/api-server
+    environment:
+      - SERVER_ID=users-1
+      - SERVICE_TYPE=users
+      - PORT=4001
+    networks:
+      - lb-network
+
+  api-users-2:
+    build:
+      context: ./backend/api-server
+    environment:
+      - SERVER_ID=users-2
+      - SERVICE_TYPE=users
+      - PORT=4001
+    networks:
+      - lb-network
+
+  api-orders-1:
+    build:
+      context: ./backend/api-server
+    environment:
+      - SERVER_ID=orders-1
+      - SERVICE_TYPE=orders
+      - PORT=4001
+    networks:
+      - lb-network
+
+  api-orders-2:
+    build:
+      context: ./backend/api-server
+    environment:
+      - SERVER_ID=orders-2
+      - SERVICE_TYPE=orders
+      - PORT=4001
+    networks:
+      - lb-network
+
+  api-products-1:
+    build:
+      context: ./backend/api-server
+    environment:
+      - SERVER_ID=products-1
+      - SERVICE_TYPE=products
+      - PORT=4001
+    networks:
+      - lb-network
+
+  api-products-2:
+    build:
+      context: ./backend/api-server
+    environment:
+      - SERVER_ID=products-2
+      - SERVICE_TYPE=products
+      - PORT=4001
+    networks:
+      - lb-network
+
+  # L4 Load Balancer (TCP mode)
+  haproxy-l4:
+    image: haproxy:2.8-alpine
+    ports:
+      - "8080:8080"
+      - "8404:8404"
+    volumes:
+      - ./haproxy/haproxy-l4.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - video-server-1
+      - video-server-2
+      - video-server-3
+    networks:
+      - lb-network
+
+  # L7 Load Balancer (HTTP mode)
+  haproxy-l7:
+    image: haproxy:2.8-alpine
+    ports:
+      - "8081:8081"
+      - "8405:8405"
+    volumes:
+      - ./haproxy/haproxy-l7.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - api-users-1
+      - api-users-2
+      - api-orders-1
+      - api-orders-2
+      - api-products-1
+      - api-products-2
+    networks:
+      - lb-network
+
+  # Dashboard
+  dashboard:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./dashboard:/usr/share/nginx/html:ro
+    networks:
+      - lb-network
+
+networks:
+  lb-network:
+    driver: bridge
