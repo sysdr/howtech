@@ -1,0 +1,71 @@
+[0;36m═══════════════════════════════════════════════════════════[0m
+[0;36m  IRQ System Analysis[0m
+[0;36m═══════════════════════════════════════════════════════════[0m
+
+[1;33mHardware Interrupt Distribution:[0m
+--------------------------------
+           CPU0       CPU1       CPU2       CPU3       CPU4       CPU5       CPU6       CPU7       
+  8:          0          0          0          0          0          0          0          0   IO-APIC   8-edge      rtc0
+  9:        360          0          0          0          0          0          0          0   IO-APIC   9-fasteoi   acpi
+ 24:          0          1          0          0          0          0          0          0  Hyper-V PCIe MSI 2938026065920-edge      virtio0-config
+ 25:          0          0       2475          0          0          0          0          0  Hyper-V PCIe MSI 2938026065921-edge      virtio0-virtqueues
+ 26:          0          0          0          0          1          0          0          0  Hyper-V PCIe MSI 8772470702080-edge      virtio1-config
+ 27:          0          0          0          0          0          2          0          0  Hyper-V PCIe MSI 8772470702081-edge      virtio1-hiprio
+ 28:          0          0          0          0          0          0         17          0  Hyper-V PCIe MSI 8772470702082-edge      virtio1-requests.0
+NMI:          0          0          0          0          0          0          0          0   Non-maskable interrupts
+LOC:          0          0          0          0          0          0          0          0   Local timer interrupts
+SPU:          0          0          0          0          0          0          0          0   Spurious interrupts
+PMI:          0          0          0          0          0          0          0          0   Performance monitoring interrupts
+IWI:         66         61         67         89         86         67         82         46   IRQ work interrupts
+RTR:          0          0          0          0          0          0          0          0   APIC ICR read retries
+RES:      51374      47458      55856      52150      55327      51749      58264      51480   Rescheduling interrupts
+CAL:    2989133    2827254    2737872    2173801    2602913    2205659    2519417    2165771   Function call interrupts
+TLB:          0          0          0          0          0          0          0          0   TLB shootdowns
+TRM:          0          0          0          0          0          0          0          0   Thermal event interrupts
+THR:          0          0          0          0          0          0          0          0   Threshold APIC interrupts
+DFR:          0          0          0          0          0          0          0          0   Deferred Error APIC interrupts
+
+[1;33mSoftware Interrupt (Softirq) Stats:[0m
+------------------------------------
+                    CPU0       CPU1       CPU2       CPU3       CPU4       CPU5       CPU6       CPU7       
+          HI:          0          0          0          0          0          0          0          0
+       TIMER:     128076      97799     158181     107696     212785     105637     153458     110821
+      NET_TX:          9          7         11          4          5         10         13          8
+      NET_RX:     732315     727693    2096882    1858144    2467629    1860259    2550108    1636290
+       BLOCK:        917       1285        759        550        617        862       1000        550
+    IRQ_POLL:          0          0          0          0          0          0          0          0
+     TASKLET:    2709437    1271691         52         38         26         79         23         25
+       SCHED:     949568     703715     738478     586502     699756     585984     683611     568879
+     HRTIMER:          0          0          1         13          0          0          0          0
+         RCU:     550045     502994     570409     464457     559571     471214     550040     463981
+
+[1;33mIRQ Affinity Settings:[0m
+----------------------
+IRQ 0: CPU mask ff
+IRQ 1: CPU mask ff
+IRQ 10: CPU mask ff
+IRQ 11: CPU mask ff
+IRQ 12: CPU mask ff
+IRQ 13: CPU mask ff
+IRQ 14: CPU mask ff
+IRQ 15: CPU mask ff
+IRQ 2: CPU mask ff
+IRQ 24: CPU mask ff
+
+[1;33mInterrupt Context Checks:[0m
+-------------------------
+Current process can check interrupt context with in_interrupt()
+Stack size in interrupt context: typically 16KB on x86-64
+Interrupt stack location: /proc/interrupts shows per-CPU counts
+
+[1;33mSystem Timing Information:[0m
+--------------------------
+Timer interrupts (check LOC line in /proc/interrupts):
+LOC:          0          0          0          0          0          0          0          0   Local timer interrupts
+
+[1;33mChecking for Interrupt Storms:[0m
+-------------------------------
+Taking snapshots 1 second apart...
+IRQs with >10,000 interrupts/sec may indicate storms:
+
+[0;32mAnalysis complete![0m
