@@ -1,0 +1,75 @@
+# Build artifacts
+*.o
+*.so
+*.a
+*.dylib
+*.dll
+*.exe
+
+# Build directories
+build/
+output/
+
+# Log files
+*.log
+logs/
+setup_run.log
+project_output.txt
+
+# Compiled binaries
+test-lazy
+test-eager
+test-no-pie
+measure
+monitor
+libexample.so
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+*.swp
+*~
+*.orig
+
+# Core dumps
+core
+core.*
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+.DS_Store
+Thumbs.db
+
+# Python cache (if any Python scripts)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# CMake (if used)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Coverage reports
+*.gcov
+*.gcda
+*.gcno
+
+# Valgrind output
+vgcore.*
+
+# Docker
+.dockerignore
+
