@@ -1,0 +1,22 @@
+{
+  "lazy": {
+    "startup_time": 0.0,
+    "first_call_cycles": 792768,
+    "second_call_cycles": 251736,
+    "overhead_cycles": 541032,
+    "overhead_percent": 68.25,
+    "last_update": 1766044552.5202224
+  },
+  "immediate": {
+    "startup_time": 0.0,
+    "first_call_cycles": 414072,
+    "second_call_cycles": 133656,
+    "overhead_cycles": 280416,
+    "overhead_percent": 67.72,
+    "last_update": 1766044552.5279605
+  },
+  "system_info": {
+    "hostname": "systemdr-01",
+    "timestamp": 1766044552.5279658
+  }
+}
