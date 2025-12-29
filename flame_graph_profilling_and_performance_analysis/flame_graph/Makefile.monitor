@@ -1,0 +1,13 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -O2 -g
+TARGET = monitor
+
+all: $(TARGET)
+
+$(TARGET): src/monitor.c
+	$(CC) $(CFLAGS) -o build/$(TARGET) src/monitor.c
+
+clean:
+	rm -f build/$(TARGET)
+
+.PHONY: all clean

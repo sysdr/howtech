@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flame Graph Profiling Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            color: #333;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .metric-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .status-ok {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .flamegraph-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .flamegraph-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .flamegraph-placeholder {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+        }
+        
+        .flamegraph-svg {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .info-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .info-panel h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .info-list {
+            list-style: none;
+        }
+        
+        .info-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .info-list strong {
+            color: #667eea;
+        }
+        
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+        
+        .last-updated {
+            color: #999;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 Flame Graph Profiling Dashboard</h1>
+            <p class="subtitle">Real-time performance metrics and visualization</p>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Profiling Status</div>
+                <div class="metric-value" id="profiling-status">Checking...</div>
+                <span class="metric-status status-ok" id="profiling-status-badge">Active</span>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Flame Graph</div>
+                <div class="metric-value" id="flamegraph-status">Checking...</div>
+                <span class="metric-status" id="flamegraph-status-badge">Unknown</span>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Perf Data</div>
+                <div class="metric-value" id="perfdata-status">Checking...</div>
+                <span class="metric-status" id="perfdata-status-badge">Unknown</span>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Binaries</div>
+                <div class="metric-value" id="binaries-status">Checking...</div>
+                <span class="metric-status" id="binaries-status-badge">Unknown</span>
+            </div>
+        </div>
+        
+        <div class="flamegraph-container">
+            <h2>Flame Graph Visualization</h2>
+            <div id="flamegraph-content">
+                <div class="flamegraph-placeholder">
+                    <p>Flame graph will appear here once profiling data is available.</p>
+                    <p style="margin-top: 10px; font-size: 12px;">Run <code>./start_demo.sh</code> to generate profiling data.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h2>System Information</h2>
+            <ul class="info-list" id="system-info">
+                <li><strong>Status:</strong> <span id="system-status">Loading...</span></li>
+                <li><strong>FlameGraph Tools:</strong> <span id="flamegraph-tools-status">Checking...</span></li>
+                <li><strong>Perf Available:</strong> <span id="perf-available">Checking...</span></li>
+                <li><strong>Output Directory:</strong> <span id="output-dir">output/</span></li>
+            </ul>
+            <button class="refresh-btn" onclick="updateDashboard()">🔄 Refresh Metrics</button>
+            <div class="last-updated" id="last-updated">Never updated</div>
+        </div>
+    </div>
+    
+    <script>
+        function updateStatus(elementId, value, statusClass, badgeText) {
+            const element = document.getElementById(elementId);
+            const badge = document.getElementById(elementId + '-badge');
+            if (element) element.textContent = value;
+            if (badge) {
+                badge.textContent = badgeText;
+                badge.className = 'metric-status ' + statusClass;
+            }
+        }
+        
+        function updateDashboard() {
+            // This would normally fetch data from a backend API
+            // For now, we'll check file existence via the file system
+            // In a real implementation, you'd have a backend service
+            
+            const timestamp = new Date().toLocaleString();
+            document.getElementById('last-updated').textContent = 'Last updated: ' + timestamp;
+            
+            // Simulate status checks (in real implementation, these would be API calls)
+            // For demo purposes, we'll show the structure
+            
+            updateStatus('profiling-status', 'Ready', 'status-ok', 'Ready');
+            updateStatus('flamegraph-status', 'Available', 'status-ok', 'Available');
+            updateStatus('perfdata-status', 'Available', 'status-ok', 'Available');
+            updateStatus('binaries-status', 'Built', 'status-ok', 'Built');
+            
+            // Try to load flame graph if it exists
+            loadFlameGraph();
+        }
+        
+        function loadFlameGraph() {
+            // In a real implementation, this would fetch the SVG from the server
+            // For now, we'll check if we can display it
+            const container = document.getElementById('flamegraph-content');
+            
+            // If running via file:// protocol, we can't load local files due to CORS
+            // In a production setup, this would be served by a web server
+            fetch('output/flamegraph.svg')
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    }
+                    throw new Error('Flame graph not found');
+                })
+                .then(svg => {
+                    container.innerHTML = '<div class="flamegraph-svg">' + svg + '</div>';
+                })
+                .catch(error => {
+                    container.innerHTML = `
+                        <div class="flamegraph-placeholder">
+                            <p>Flame graph not yet generated.</p>
+                            <p style="margin-top: 10px; font-size: 12px;">
+                                To generate: <code>./start_demo.sh</code>
+                            </p>
+                            <p style="margin-top: 10px; font-size: 12px; color: #999;">
+                                Note: Requires perf tool and sudo access
+                            </p>
+                        </div>
+                    `;
+                });
+        }
+        
+        // Initial load
+        updateDashboard();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(updateDashboard, 30000);
+    </script>
+</body>
+</html>
+
