@@ -1,0 +1,6 @@
+FROM scratch
+
+COPY build/httpserver-static-glibc /httpserver
+
+EXPOSE 8080
+CMD ["/httpserver"]

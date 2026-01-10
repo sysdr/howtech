@@ -1,0 +1,11 @@
+FROM ubuntu:22.04
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libc6 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY build/httpserver-dynamic /usr/local/bin/httpserver
+
+EXPOSE 8080
+CMD ["/usr/local/bin/httpserver"]
