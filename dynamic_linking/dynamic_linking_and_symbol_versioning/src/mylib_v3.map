@@ -1,0 +1,21 @@
+MYLIB_1.0 {
+  global:
+    api_init;
+    api_process;
+    api_cleanup;
+  local:
+    *;
+};
+
+MYLIB_2.0 {
+  global:
+    api_init_v2;
+    api_process_extended;
+    api_get_stats;
+} MYLIB_1.0;
+
+MYLIB_3.0 {
+  global:
+    api_process_batch;
+    api_reset;
+} MYLIB_2.0;
