@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSAN Race Condition Detector - Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        .metric-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .metric-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .status-ok { background: #4caf50; color: white; }
+        .status-error { background: #f44336; color: white; }
+        .status-warning { background: #ff9800; color: white; }
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+        .log-section {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .log-content {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .timestamp {
+            color: #888;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Thread Sanitizer (TSAN) Race Condition Detector</h1>
+            <p class="subtitle">Real-time Metrics Dashboard</p>
+        </header>
+        
+        <div class="metrics-grid" id="metricsGrid">
+            <div class="metric-card">
+                <div class="metric-title">Race Example</div>
+                <div class="metric-value" id="raceExampleValue">-</div>
+                <div class="metric-label">Final Counter Value</div>
+                <div class="metric-label">Expected: 400000</div>
+                <div class="status-badge status-error" id="raceExampleStatus">Race Condition</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Fixed (Mutex)</div>
+                <div class="metric-value" id="raceFixedValue">-</div>
+                <div class="metric-label">Final Counter Value</div>
+                <div class="metric-label">Expected: 400000</div>
+                <div class="status-badge status-ok" id="raceFixedStatus">Correct</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Fixed (Atomic)</div>
+                <div class="metric-value" id="raceAtomicValue">-</div>
+                <div class="metric-label">Final Counter Value</div>
+                <div class="metric-label">Expected: 400000</div>
+                <div class="status-badge status-ok" id="raceAtomicStatus">Correct</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">TSAN Detection</div>
+                <div class="metric-value" id="tsanDetection">-</div>
+                <div class="metric-label">Races Detected</div>
+                <div class="status-badge status-warning" id="tsanStatus">Monitoring</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Performance</div>
+                <div class="metric-value" id="performance">-</div>
+                <div class="metric-label">Average Duration (ms)</div>
+                <div class="metric-label" id="performanceDetails"></div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">System Status</div>
+                <div class="metric-value" id="systemStatus">✓</div>
+                <div class="metric-label">All Systems Operational</div>
+                <div class="status-badge status-ok" id="systemStatusBadge">Running</div>
+            </div>
+        </div>
+        
+        <button class="refresh-btn" onclick="updateMetrics()">🔄 Refresh Metrics</button>
+        
+        <div class="log-section">
+            <div class="metric-title">Live Log</div>
+            <div class="log-content" id="logContent">Waiting for metrics...</div>
+            <div class="timestamp" id="lastUpdate">Last update: Never</div>
+        </div>
+    </div>
+    
+    <script>
+        async function updateMetrics() {
+            try {
+                const response = await fetch('/metrics.json');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch metrics');
+                }
+                const data = await response.json();
+                
+                // Update race example
+                const raceExample = data.programs.race_example;
+                if (raceExample) {
+                    document.getElementById('raceExampleValue').textContent = raceExample.final_value.toLocaleString();
+                    const lost = raceExample.lost_updates || 0;
+                    document.getElementById('raceExampleStatus').textContent = lost > 0 ? `Lost ${lost} updates` : 'Race Condition';
+                }
+                
+                // Update fixed version
+                const raceFixed = data.programs.race_fixed;
+                if (raceFixed) {
+                    document.getElementById('raceFixedValue').textContent = raceFixed.final_value.toLocaleString();
+                    document.getElementById('raceFixedStatus').textContent = raceFixed.correct ? 'Correct' : 'Incorrect';
+                    document.getElementById('raceFixedStatus').className = 'status-badge ' + (raceFixed.correct ? 'status-ok' : 'status-error');
+                }
+                
+                // Update atomic version
+                const raceAtomic = data.programs.race_atomic;
+                if (raceAtomic) {
+                    document.getElementById('raceAtomicValue').textContent = raceAtomic.final_value.toLocaleString();
+                    document.getElementById('raceAtomicStatus').textContent = raceAtomic.correct ? 'Correct' : 'Incorrect';
+                    document.getElementById('raceAtomicStatus').className = 'status-badge ' + (raceAtomic.correct ? 'status-ok' : 'status-error');
+                }
+                
+                // Update TSAN detection
+                const tsan = data.programs.race_example_tsan;
+                if (tsan) {
+                    document.getElementById('tsanDetection').textContent = tsan.race_count || 0;
+                    document.getElementById('tsanStatus').textContent = tsan.race_detected ? 'Races Found' : 'No Races';
+                    document.getElementById('tsanStatus').className = 'status-badge ' + (tsan.race_detected ? 'status-error' : 'status-ok');
+                }
+                
+                // Update performance
+                if (raceExample && raceFixed && raceAtomic) {
+                    const avgDuration = Math.round((raceExample.duration_ms + raceFixed.duration_ms + raceAtomic.duration_ms) / 3);
+                    document.getElementById('performance').textContent = avgDuration + ' ms';
+                    document.getElementById('performanceDetails').textContent = 
+                        `Race: ${raceExample.duration_ms}ms | Fixed: ${raceFixed.duration_ms}ms | Atomic: ${raceAtomic.duration_ms}ms`;
+                }
+                
+                // Update log
+                const logContent = JSON.stringify(data, null, 2);
+                document.getElementById('logContent').textContent = logContent;
+                document.getElementById('lastUpdate').textContent = 'Last update: ' + new Date(data.timestamp * 1000).toLocaleString();
+                
+            } catch (error) {
+                document.getElementById('logContent').textContent = 'Error: ' + error.message + '\n\nMake sure metrics_collector.sh has been run and a web server is serving metrics.json';
+                console.error('Error updating metrics:', error);
+            }
+        }
+        
+        // Auto-refresh every 5 seconds
+        setInterval(updateMetrics, 5000);
+        
+        // Initial load
+        updateMetrics();
+    </script>
+</body>
+</html>
