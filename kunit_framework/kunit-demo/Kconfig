@@ -1,0 +1,13 @@
+config KUNIT_DEMO_DRIVER
+	tristate "KUnit Demo Driver"
+	depends on KUNIT
+	help
+	  Simple character device driver demonstrating KUnit testing
+	  with dependency injection pattern.
+
+config KUNIT_DEMO_TESTS
+	tristate "KUnit Demo Driver Tests" if !KUNIT_ALL_TESTS
+	depends on KUNIT_DEMO_DRIVER && KUNIT
+	default KUNIT_ALL_TESTS
+	help
+	  KUnit test suite for the demo driver.
