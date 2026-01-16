@@ -1,0 +1,94 @@
+
+╔════════════════════════════════════════════════════════════╗
+║       JTAG TAP State Machine Simulator                     ║
+║       Demonstrates DMI Register Access Sequence            ║
+╚════════════════════════════════════════════════════════════╝
+
+Resetting TAP to TEST-LOGIC-RESET (5 TMS=1 clocks)...
+TAP State: RUN-TEST/IDLE
+
+╔════════════════════════════════════════════════════════════╗
+║          IR Scan Simulation (5 bits)                     ║
+╚════════════════════════════════════════════════════════════╝
+
+Clock  TMS   TAP State           
+─────────────────────────────────────────────────
+0      1     SELECT-DR-SCAN      
+1      1     SELECT-IR-SCAN      
+2      0     CAPTURE-IR          
+3      0     SHIFT-IR            
+
+Shifting IR value 0x11 (5 bits)...
+4      0     SHIFT-IR             TDI=1
+5      0     SHIFT-IR             TDI=0
+6      0     SHIFT-IR             TDI=0
+7      0     SHIFT-IR             TDI=0
+8      1     EXIT1-IR             TDI=1
+9      1     UPDATE-IR           
+10     0     RUN-TEST/IDLE       
+
+IR scan complete. Total clocks: 11
+
+╔════════════════════════════════════════════════════════════╗
+║          DR Scan Simulation (41 bits)                     ║
+╚════════════════════════════════════════════════════════════╝
+
+Clock  TMS   TAP State           
+─────────────────────────────────────────────────
+0      1     SELECT-DR-SCAN      
+1      0     CAPTURE-DR          
+2      0     SHIFT-DR            
+
+Shifting 41 bits through DR...
+3      0     SHIFT-DR            
+4      0     SHIFT-DR            
+5      0     SHIFT-DR            
+6      0     SHIFT-DR            
+7      0     SHIFT-DR            
+8      0     SHIFT-DR            
+9      0     SHIFT-DR            
+10     0     SHIFT-DR            
+11     0     SHIFT-DR            
+12     0     SHIFT-DR            
+13     0     SHIFT-DR            
+14     0     SHIFT-DR            
+15     0     SHIFT-DR            
+16     0     SHIFT-DR            
+17     0     SHIFT-DR            
+18     0     SHIFT-DR            
+19     0     SHIFT-DR            
+20     0     SHIFT-DR            
+21     0     SHIFT-DR            
+22     0     SHIFT-DR            
+23     0     SHIFT-DR            
+24     0     SHIFT-DR            
+25     0     SHIFT-DR            
+26     0     SHIFT-DR            
+27     0     SHIFT-DR            
+28     0     SHIFT-DR            
+29     0     SHIFT-DR            
+30     0     SHIFT-DR            
+31     0     SHIFT-DR            
+32     0     SHIFT-DR            
+33     0     SHIFT-DR            
+34     0     SHIFT-DR            
+35     0     SHIFT-DR            
+36     0     SHIFT-DR            
+37     0     SHIFT-DR            
+38     0     SHIFT-DR            
+39     0     SHIFT-DR            
+40     0     SHIFT-DR            
+41     0     SHIFT-DR            
+42     0     SHIFT-DR            
+43     1     EXIT1-DR            
+44     1     UPDATE-DR           
+45     0     RUN-TEST/IDLE       
+
+DR scan complete. Total clocks: 46
+
+════════════════════════════════════════════════════════════
+Simulation complete!
+This demonstrates the JTAG operations OpenOCD performs
+to access RISC-V Debug Module registers.
+════════════════════════════════════════════════════════════
+

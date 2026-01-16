@@ -1,0 +1,63 @@
+OpenOCD RISC-V Configuration Demo - Summary
+============================================
+
+Generated Files:
+----------------
+Configuration Files:
+  - configs/ftdi_adapter.cfg    : FTDI FT2232H adapter configuration
+  - configs/riscv_target.cfg    : Single-core RISC-V target
+  - configs/riscv_smp.cfg       : Multi-core SMP configuration
+
+Source Code:
+  - src/openocd_validator.c     : Configuration file validator
+  - src/jtag_simulator.c        : JTAG TAP state machine simulator
+  - src/openocd_monitor.c       : Real-time configuration monitor
+
+Executables:
+  - ./openocd_validator         : Validate OpenOCD config files
+  - ./jtag_simulator            : Demonstrate JTAG operations
+  - ./openocd_monitor           : Interactive monitoring tool
+
+Key Takeaways:
+--------------
+1. OpenOCD configuration requires three components:
+   - Debug adapter settings (interface/*.cfg)
+   - JTAG chain topology (IR lengths, IDCODEs)
+   - Target CPU configuration (RISC-V specific options)
+
+2. Common failure points:
+   - Wrong IR length → TAP state machine desynchronization
+   - Incorrect reset_config → Silent hangs during init
+   - JTAG frequency too high → Random communication errors
+
+3. JTAG timing matters:
+   - Start at 100-200 kHz for bring-up
+   - Increase frequency only after verifying signal quality
+   - Each register read = 3 JTAG scans = hundreds of microseconds
+
+4. RISC-V Debug Module variations:
+   - Abstract commands: Fast but optional
+   - Program Buffer: Slow but mandatory
+   - System Bus Access: Best for memory operations
+
+5. Multi-core debugging:
+   - Requires -rtos hwthread in OpenOCD
+   - Need 'set remote hwthread-packet on' in GDB
+   - Watch for power-gated cores (use -defer-examine)
+
+Real Hardware Debugging:
+------------------------
+To use with real hardware:
+1. Update configs/ftdi_adapter.cfg with your adapter's VID/PID
+2. Get exact IDCODE from datasheet: jtag newtap -expected-id 0xXXXXXXXX
+3. Verify IR length with logic analyzer if docs are wrong
+4. Start at 100 kHz, measure signal quality with oscilloscope
+5. Enable OpenOCD debug logging: -d3 flag
+6. Check DMI register access in logs for abstract vs. progbuf
+
+Resources:
+----------
+- RISC-V Debug Specification 1.0: riscv.org/specifications/debug/
+- OpenOCD Documentation: openocd.org/doc/
+- JTAG Specification: IEEE 1149.1
+

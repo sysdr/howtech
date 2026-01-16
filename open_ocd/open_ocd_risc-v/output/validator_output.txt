@@ -1,0 +1,48 @@
+
+╔════════════════════════════════════════════════════════════╗
+║          OpenOCD Configuration Summary                     ║
+╚════════════════════════════════════════════════════════════╝
+
+Debug Adapter:
+  Driver:          (not specified)
+  JTAG Speed:      100 kHz
+
+JTAG Chain:
+  TAP Count:       1
+  TAP 1: $_CHIPNAME.cpu
+    IR Length:     5 bits
+    Expected IDCODE: 0x10e31913
+    Ignore Version:  no
+    IR Scan Time:  50.0 μs (5 clocks @ 0.1 MHz)
+    DMI Scan Time: 410.0 μs (41 clocks)
+
+RISC-V Debug Module:
+  Prefer System Bus Access: yes
+  Virtual Memory:           disabled
+  Command Timeout:          10 seconds
+
+╔════════════════════════════════════════════════════════════╗
+║          JTAG Timing Analysis                              ║
+╚════════════════════════════════════════════════════════════╝
+
+JTAG Clock Configuration:
+  Frequency:       0.10 MHz (100 kHz)
+  Period:          10000.0 ns
+
+Timing Validation:
+  ✓ Clock period adequate for timing requirements
+  ✓ Frequency within recommended range
+
+Operation Timing Estimates:
+  Single Register Read:    1.23 ms
+  64-bit Memory Read:      2.46 ms
+  1KB Memory Dump:         ~39.4 ms (16 x 64-bit reads)
+
+╔════════════════════════════════════════════════════════════╗
+║          Common Configuration Issues Check                 ║
+╚════════════════════════════════════════════════════════════╝
+
+⚠ WARNING: No reset_config specified
+  Add 'reset_config trst_and_srst separate' or appropriate variant
+
+
