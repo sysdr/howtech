@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Descriptor Tracking Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b68ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            color: #888;
+            margin-top: 10px;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .panel-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(0, 212, 255, 0.2);
+            color: #00d4ff;
+        }
+        
+        .metric {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00d4ff;
+        }
+        
+        .metric-unit {
+            font-size: 1rem;
+            color: #888;
+            margin-left: 5px;
+        }
+        
+        .process-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .process-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .process-name {
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+        
+        .process-pid {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        .process-fds {
+            color: #00d4ff;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-active {
+            background: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+        
+        .status-warning {
+            background: #ffaa00;
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+        }
+        
+        .status-error {
+            background: #ff4444;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+        
+        .chart-container {
+            height: 200px;
+            position: relative;
+            margin-top: 20px;
+        }
+        
+        .update-time {
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+            margin-top: 20px;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #00d4ff, #7b68ee);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+        }
+        
+        .button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>File Descriptor Tracking Dashboard</h1>
+        <p>Real-time monitoring of file descriptors and process tracking</p>
+    </div>
+    
+    <div class="controls">
+        <button class="button" onclick="startDemo()">Start Demo</button>
+        <button class="button" onclick="stopDemo()">Stop Demo</button>
+        <button class="button" onclick="refreshData()">Refresh</button>
+    </div>
+    
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">System Overview</div>
+                <span class="badge" id="system-status">Active</span>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Total Open FDs</div>
+                <div class="metric-value" id="total-fds">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Processes Tracked</div>
+                <div class="metric-value" id="process-count">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Leaked Files</div>
+                <div class="metric-value" id="leaked-files">0</div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Top Processes by FD Count</div>
+            </div>
+            <div class="process-list" id="top-processes">
+                <div style="text-align: center; color: #888; padding: 20px;">
+                    Loading...
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Demo Status</div>
+            </div>
+            <div id="demo-status">
+                <div class="metric">
+                    <div class="metric-label">FD Leak Process</div>
+                    <div>
+                        <span class="status-indicator" id="leak-status"></span>
+                        <span id="leak-info">Not running</span>
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">FD Monitor Process</div>
+                    <div>
+                        <span class="status-indicator" id="monitor-status"></span>
+                        <span id="monitor-info">Not running</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">FD Distribution</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Regular Files</div>
+                <div class="metric-value" id="regular-files">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Sockets</div>
+                <div class="metric-value" id="sockets">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Pipes</div>
+                <div class="metric-value" id="pipes">0</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Deleted Files</div>
+                <div class="metric-value" id="deleted-files">0</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="update-time" id="update-time">
+        Last updated: Never
+    </div>
+    
+    <script>
+        let refreshInterval;
+        
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                if (!response.ok) throw new Error('Failed to fetch metrics');
+                const data = await response.json();
+                updateDashboard(data);
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+                // Fallback: try to get data from local file
+                try {
+                    const response = await fetch('metrics.json');
+                    if (response.ok) {
+                        const data = await response.json();
+                        updateDashboard(data);
+                    }
+                } catch (e) {
+                    console.error('Fallback also failed:', e);
+                }
+            }
+        }
+        
+        function updateDashboard(data) {
+            // Update system overview
+            document.getElementById('total-fds').textContent = data.total_fds || 0;
+            document.getElementById('process-count').textContent = data.process_count || 0;
+            document.getElementById('leaked-files').textContent = data.leaked_files || 0;
+            
+            // Update FD distribution
+            document.getElementById('regular-files').textContent = data.regular_files || 0;
+            document.getElementById('sockets').textContent = data.sockets || 0;
+            document.getElementById('pipes').textContent = data.pipes || 0;
+            document.getElementById('deleted-files').textContent = data.deleted_files || 0;
+            
+            // Update top processes
+            const topProcessesDiv = document.getElementById('top-processes');
+            if (data.top_processes && data.top_processes.length > 0) {
+                topProcessesDiv.innerHTML = data.top_processes.map(p => `
+                    <div class="process-item">
+                        <div>
+                            <div class="process-name">${p.name || 'unknown'}</div>
+                            <div class="process-pid">PID: ${p.pid}</div>
+                        </div>
+                        <div class="process-fds">${p.fd_count} FDs</div>
+                    </div>
+                `).join('');
+            } else {
+                topProcessesDiv.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">No processes found</div>';
+            }
+            
+            // Update demo status
+            const leakStatus = document.getElementById('leak-status');
+            const leakInfo = document.getElementById('leak-info');
+            const monitorStatus = document.getElementById('monitor-status');
+            const monitorInfo = document.getElementById('monitor-info');
+            
+            if (data.demo && data.demo.leak_pid) {
+                leakStatus.className = 'status-indicator status-active';
+                leakInfo.textContent = `Running (PID: ${data.demo.leak_pid})`;
+            } else {
+                leakStatus.className = 'status-indicator status-error';
+                leakInfo.textContent = 'Not running';
+            }
+            
+            if (data.demo && data.demo.monitor_pid) {
+                monitorStatus.className = 'status-indicator status-active';
+                monitorInfo.textContent = `Running (PID: ${data.demo.monitor_pid})`;
+            } else {
+                monitorStatus.className = 'status-indicator status-error';
+                monitorInfo.textContent = 'Not running';
+            }
+            
+            // Update timestamp
+            document.getElementById('update-time').textContent = 
+                `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
+        
+        function startDemo() {
+            fetch('/api/start', { method: 'POST' })
+                .then(() => {
+                    setTimeout(refreshData, 2000);
+                })
+                .catch(err => {
+                    alert('Failed to start demo: ' + err.message);
+                });
+        }
+        
+        function stopDemo() {
+            fetch('/api/stop', { method: 'POST' })
+                .then(() => {
+                    setTimeout(refreshData, 1000);
+                })
+                .catch(err => {
+                    alert('Failed to stop demo: ' + err.message);
+                });
+        }
+        
+        function refreshData() {
+            fetchMetrics();
+        }
+        
+        // Auto-refresh every 2 seconds
+        function startAutoRefresh() {
+            refreshInterval = setInterval(refreshData, 2000);
+        }
+        
+        // Initial load
+        refreshData();
+        startAutoRefresh();
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
+
