@@ -1,0 +1,65 @@
+REM ============================================================================
+REM WinDbg Commands for Device Tree Analysis
+REM ============================================================================
+REM
+REM Usage:
+REM   1. Attach WinDbg to Windows kernel (local or remote)
+REM   2. Load these commands: $$>< device_tree_commands.txt
+REM   3. Or copy-paste individual commands
+REM
+
+REM Display entire device tree with properties
+!devnode 0 1
+
+REM Show device stack for a specific PDO
+REM First, find PDO address with !devnode, then:
+REM !devstack <PDO_address>
+
+REM Example for USB devices:
+!devnode 0 1 USB
+
+REM Show detailed device object information
+dt nt!_DEVICE_OBJECT <address>
+
+REM Show device node structure
+dt nt!_DEVICE_NODE <address>
+
+REM List all device objects
+!object \Device
+
+REM Show PnP state
+!poaction
+
+REM Breakpoint on device property query (kernel mode)
+bp nt!IoGetDevicePropertyData
+
+REM Breakpoint on Configuration Manager property query
+bp nt!CmGetDevNodePropertyKeys
+
+REM Display call stack when property query occurs
+ba e 1 nt!IoGetDevicePropertyData "kb; g"
+
+REM Monitor registry access during device enumeration
+!regext.treesize HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Enum
+
+REM Show device capabilities
+!devobj <device_address> 1
+
+REM List IRPs queued to device
+!devstack <device_address> 0x10
+
+REM =============================================================================
+REM Performance Analysis
+REM =============================================================================
+
+REM Enable tracing for device enumeration
+!wmitrace.start DeviceEnum -kd
+
+REM View PnP events
+!wmitrace.logsave DeviceEnum -kd C:\pnp_trace.etl
+
+REM Analyze timing
+!wmitrace.searchpath C:\Symbols
+!wmitrace.dumplogs DeviceEnum
+
+REM =============================================================================

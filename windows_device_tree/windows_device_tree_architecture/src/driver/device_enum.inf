@@ -1,0 +1,50 @@
+;
+; Device Tree Enumerator Driver
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4D36E97D-E325-11CE-BFC1-08002BE10318}
+Provider=%ManufacturerName%
+CatalogFile=device_enum.cat
+DriverVer=01/18/2026,1.0.0.0
+PnpLockDown=1
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+device_enum.sys  = 1,,
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%DeviceEnum.DeviceDesc%=DeviceEnum_Device, ROOT\DEVICEENUM
+
+[DeviceEnum_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+device_enum.sys
+
+[DeviceEnum_Device.NT.Services]
+AddService = DeviceEnum,%SPSVCINST_ASSOCSERVICE%, DeviceEnum_Service_Inst
+
+[DeviceEnum_Service_Inst]
+DisplayName    = %DeviceEnum.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\device_enum.sys
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName="Device Tree Enumerator"
+DiskName = "Device Enum Installation Disk"
+DeviceEnum.DeviceDesc = "Device Tree Enumerator"
+DeviceEnum.SVCDESC = "Device Tree Enumeration Driver"

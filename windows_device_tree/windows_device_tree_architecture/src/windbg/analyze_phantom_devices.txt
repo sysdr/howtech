@@ -1,0 +1,27 @@
+REM ============================================================================
+REM Analyzing Phantom Devices (Non-Present Devices)
+REM ============================================================================
+REM
+REM Phantom devices are registry entries for hardware that's been removed
+REM but whose entries remain in the registry. They slow down boot times.
+REM
+
+REM Show all device nodes (including non-present)
+!devnode 0 21
+
+REM The '21' flags mean:
+REM   DEVNODE_PROBLEM (0x20) - show problem devices
+REM   DEVNODE_NOT_STARTED (0x01) - show devices not started
+
+REM To find specific phantom device in registry:
+REM 1. In regedit, navigate to:
+REM    HKLM\SYSTEM\CurrentControlSet\Enum
+REM 2. Look for devices with no ConfigFlags or ConfigFlags=0x2 (CONFIGFLAG_DISABLED)
+
+REM In WinDbg, check registry key:
+!reg queryval HKLM\SYSTEM\CurrentControlSet\Enum\<DevicePath> ConfigFlags
+
+REM Count phantom devices programmatically:
+.foreach (dev {!devnode 0 21}) { .echo ${dev} }
+
+REM =============================================================================
