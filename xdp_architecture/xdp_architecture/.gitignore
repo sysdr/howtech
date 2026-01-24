@@ -1,0 +1,27 @@
+# Build outputs
+build/
+*.o
+
+# Runtime outputs and logs
+output/*.log
+output/packet_gen.log
+
+# Temporary files
+*.tmp
+*.bak
+*~
+*.swp
+.DS_Store
+
+# Setup logs
+setup_output.log
+*.log
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-*
+
+# System files
+Thumbs.db
+

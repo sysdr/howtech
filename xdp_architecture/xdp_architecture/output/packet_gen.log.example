@@ -1,0 +1,16 @@
+Sending UDP packets to 127.0.0.1:9999 at 100000 pps
+Press Ctrl+C to stop
+
+Sent: 10000 packets, Rate: 50000 pps
+Sent: 20000 packets, Rate: 66666 pps
+Sent: 30000 packets, Rate: 75000 pps
+Sent: 40000 packets, Rate: 80000 pps
+Sent: 50000 packets, Rate: 83333 pps
+Sent: 60000 packets, Rate: 85714 pps
+Sent: 70000 packets, Rate: 87500 pps
+Sent: 80000 packets, Rate: 88888 pps
+Sent: 90000 packets, Rate: 90000 pps
+Sent: 100000 packets, Rate: 90909 pps
+
+Total packets sent: 100000
+
