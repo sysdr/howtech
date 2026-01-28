@@ -1,0 +1,8 @@
+build_and_run.sh
+do_all_3_steps.sh
+install_and_build.sh
+run_all.sh
+simulate_output.sh
+verify_and_run.sh
+EXPECTED_OUTPUT.md
+
