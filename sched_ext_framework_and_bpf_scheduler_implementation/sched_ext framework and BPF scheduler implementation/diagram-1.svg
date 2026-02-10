@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" style="background: white;">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+    </filter>
+    <style>
+      .queue-box { fill: #E3F2FD; stroke: #1976D2; stroke-width: 2; }
+      .dispatcher { fill: #FFF3E0; stroke: #F57C00; stroke-width: 2; }
+      .cpu-box { fill: #F1F8E9; stroke: #388E3C; stroke-width: 2; }
+      .arrow { stroke: #455A64; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .label { font-family: 'Courier New', monospace; font-size: 14px; fill: #212121; }
+      .title { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #1976D2; }
+      .annotation { font-family: Arial, sans-serif; font-size: 11px; fill: #616161; font-style: italic; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#455A64" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="30" class="title" text-anchor="middle">Multi-Level Queue Architecture (BPF_MAP_TYPE_QUEUE)</text>
+  
+  <!-- High Priority Queue -->
+  <g filter="url(#shadow)">
+    <rect x="50" y="80" width="180" height="100" rx="8" class="queue-box"/>
+    <text x="140" y="105" class="label" text-anchor="middle" font-weight="bold">HIGH Priority</text>
+    <text x="140" y="125" class="annotation" text-anchor="middle">BPF_MAP_TYPE_QUEUE</text>
+    <rect x="70" y="135" width="140" height="30" rx="4" fill="white" stroke="#1976D2" stroke-width="1"/>
+    <text x="140" y="155" class="label" text-anchor="middle" font-size="12">PID: 1024, 1025...</text>
+    <text x="220" y="100" class="annotation">nice &lt; 0</text>
+  </g>
+  
+  <!-- Medium Priority Queue -->
+  <g filter="url(#shadow)">
+    <rect x="50" y="220" width="180" height="100" rx="8" class="queue-box"/>
+    <text x="140" y="245" class="label" text-anchor="middle" font-weight="bold">MEDIUM Priority</text>
+    <text x="140" y="265" class="annotation" text-anchor="middle">BPF_MAP_TYPE_QUEUE</text>
+    <rect x="70" y="275" width="140" height="30" rx="4" fill="white" stroke="#1976D2" stroke-width="1"/>
+    <text x="140" y="295" class="label" text-anchor="middle" font-size="12">PID: 2048, 2049...</text>
+    <text x="220" y="240" class="annotation">nice 0-10</text>
+  </g>
+  
+  <!-- Low Priority Queue -->
+  <g filter="url(#shadow)">
+    <rect x="50" y="360" width="180" height="100" rx="8" class="queue-box"/>
+    <text x="140" y="385" class="label" text-anchor="middle" font-weight="bold">LOW Priority</text>
+    <text x="140" y="405" class="annotation" text-anchor="middle">BPF_MAP_TYPE_QUEUE</text>
+    <rect x="70" y="415" width="140" height="30" rx="4" fill="white" stroke="#1976D2" stroke-width="1"/>
+    <text x="140" y="435" class="label" text-anchor="middle" font-size="12">PID: 3072, 3073...</text>
+    <text x="220" y="380" class="annotation">nice &gt; 10</text>
+  </g>
+  
+  <!-- Dispatcher -->
+  <g filter="url(#shadow)">
+    <rect x="320" y="220" width="160" height="120" rx="8" class="dispatcher"/>
+    <text x="400" y="245" class="label" text-anchor="middle" font-weight="bold">Dispatcher</text>
+    <text x="400" y="265" class="annotation" text-anchor="middle">dispatch() BPF hook</text>
+    
+    <text x="400" y="290" class="label" text-anchor="middle" font-size="12">1. Pop HIGH queue</text>
+    <text x="400" y="305" class="label" text-anchor="middle" font-size="12">2. If empty, try MEDIUM</text>
+    <text x="400" y="320" class="label" text-anchor="middle" font-size="12">3. If empty, try LOW</text>
+  </g>
+  
+  <!-- Arrows from queues to dispatcher -->
+  <path d="M 230 130 L 320 260" class="arrow"/>
+  <text x="270" y="190" class="annotation">bpf_map_pop_elem()</text>
+  <text x="270" y="205" class="annotation">O(1) operation</text>
+  
+  <path d="M 230 270 L 320 280" class="arrow"/>
+  
+  <path d="M 230 410 L 320 300" class="arrow"/>
+  
+  <!-- DSQ (Dispatch Queue) -->
+  <g filter="url(#shadow)">
+    <rect x="560" y="240" width="140" height="80" rx="8" class="cpu-box"/>
+    <text x="630" y="265" class="label" text-anchor="middle" font-weight="bold">Dispatch Queue</text>
+    <text x="630" y="285" class="annotation" text-anchor="middle">(SCX_DSQ_LOCAL)</text>
+    <text x="630" y="305" class="label" text-anchor="middle" font-size="11">Kernel runqueue</text>
+  </g>
+  
+  <!-- Arrow from dispatcher to DSQ -->
+  <path d="M 480 280 L 560 280" class="arrow"/>
+  <text x="510" y="270" class="annotation">scx_bpf_dispatch()</text>
+  
+  <!-- CPU -->
+  <g filter="url(#shadow)">
+    <circle cx="670" cy="450" r="50" fill="#C8E6C9" stroke="#388E3C" stroke-width="2"/>
+    <text x="670" y="445" class="label" text-anchor="middle" font-weight="bold">CPU</text>
+    <text x="670" y="465" class="label" text-anchor="middle" font-size="12">Execute</text>
+  </g>
+  
+  <!-- Arrow from DSQ to CPU -->
+  <path d="M 650 320 L 660 400" class="arrow"/>
+  <text x="655" y="360" class="annotation">~200ns latency</text>
+  
+  <!-- Task enqueue path -->
+  <g>
+    <rect x="50" y="510" width="200" height="60" rx="8" fill="#FFF9C4" stroke="#FBC02D" stroke-width="2" filter="url(#shadow)"/>
+    <text x="150" y="535" class="label" text-anchor="middle" font-weight="bold">New Task Wakeup</text>
+    <text x="150" y="555" class="annotation" text-anchor="middle">enqueue() BPF hook</text>
+  </g>
+  
+  <path d="M 150 510 L 140 460" class="arrow" stroke-dasharray="5,5"/>
+  <text x="160" y="485" class="annotation">Priority-based</text>
+  <text x="160" y="500" class="annotation">routing</text>
+  
+  <!-- Performance annotations -->
+  <text x="550" y="450" class="annotation">Direct dispatch:</text>
+  <text x="550" y="465" class="annotation">~200ns overhead</text>
+  
+  <text x="320" y="360" class="annotation">Verifier-safe bounded loop</text>
+  <text x="320" y="375" class="annotation">MAX_DISPATCH_BATCH=32</text>
+</svg>
