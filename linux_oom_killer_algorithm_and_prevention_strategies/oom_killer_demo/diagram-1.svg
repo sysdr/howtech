@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#f5f5f5"/>
+  <text x="400" y="30" font-family="Arial" font-size="24" font-weight="bold" text-anchor="middle">OOM Score Calculation Flow</text>
+  
+  <!-- Process Memory -->
+  <rect x="50" y="80" width="150" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="5"/>
+  <text x="125" y="110" font-family="Arial" font-size="14" text-anchor="middle">Process RSS</text>
+  <text x="125" y="130" font-family="Arial" font-size="12" text-anchor="middle">(Resident Memory)</text>
+  
+  <!-- Total Memory -->
+  <rect x="250" y="80" width="150" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="5"/>
+  <text x="325" y="110" font-family="Arial" font-size="14" text-anchor="middle">Total Memory</text>
+  <text x="325" y="130" font-family="Arial" font-size="12" text-anchor="middle">(System RAM)</text>
+  
+  <!-- Calculation -->
+  <rect x="450" y="80" width="150" height="60" fill="#fff3e0" stroke="#f57c00" stroke-width="2" rx="5"/>
+  <text x="525" y="110" font-family="Arial" font-size="14" text-anchor="middle">Base Score</text>
+  <text x="525" y="130" font-family="Arial" font-size="12" text-anchor="middle">(RSS / Total) × 1000</text>
+  
+  <!-- Adjustment -->
+  <rect x="650" y="80" width="100" height="60" fill="#f3e5f5" stroke="#7b1fa2" stroke-width="2" rx="5"/>
+  <text x="700" y="110" font-family="Arial" font-size="14" text-anchor="middle">Adj</text>
+  <text x="700" y="130" font-family="Arial" font-size="12" text-anchor="middle">(-1000 to +1000)</text>
+  
+  <!-- Arrows -->
+  <path d="M 200 110 L 240 110" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 400 110 L 440 110" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 600 110 L 640 110" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Final Score -->
+  <rect x="300" y="250" width="200" height="80" fill="#e8f5e9" stroke="#388e3c" stroke-width="3" rx="5"/>
+  <text x="400" y="280" font-family="Arial" font-size="16" font-weight="bold" text-anchor="middle">Final OOM Score</text>
+  <text x="400" y="305" font-family="Arial" font-size="14" text-anchor="middle">Base Score + Adj</text>
+  <text x="400" y="325" font-family="Arial" font-size="12" text-anchor="middle">Higher = More likely to be killed</text>
+  
+  <!-- Arrow to final -->
+  <path d="M 400 170 L 400 240" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
+  
+  <!-- Arrow marker definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#333"/>
+    </marker>
+  </defs>
+</svg>
