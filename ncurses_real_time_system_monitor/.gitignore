@@ -1,0 +1,15 @@
+# Override parent .gitignore - we want to track build/ directory
+# but ignore only compiled binaries and generated files
+
+# Ignore compiled binaries
+build/bin/*
+!build/bin/.gitkeep
+
+# Ignore generated output files
+build/*.txt
+build/*.log
+
+# Keep source files, Makefile, and Dockerfile
+!build/src/
+!build/Dockerfile
+
