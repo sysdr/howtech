@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Allocator Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .metric:last-child { border-bottom: none; }
+        .metric-label { font-weight: 600; color: #555; }
+        .metric-value { color: #667eea; font-weight: 700; }
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .status.running { background: #4caf50; color: white; }
+        .status.stopped { background: #f44336; color: white; }
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        .refresh-btn:hover { background: #5568d3; }
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        canvas { max-height: 300px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Memory Allocator Performance Dashboard</h1>
+        <div class="controls">
+            <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+            <button class="refresh-btn" onclick="runBenchmark()">▶️ Run Benchmark</button>
+        </div>
+        <div class="dashboard">
+            <div class="card">
+                <h2>Throughput (allocs/sec)</h2>
+                <canvas id="throughputChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Latency (p99, ns)</h2>
+                <canvas id="latencyChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Memory Usage (RSS delta, KB)</h2>
+                <canvas id="memoryChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Current Status</h2>
+                <div class="metric">
+                    <span class="metric-label">ptmalloc2</span>
+                    <span class="status stopped" id="status-ptmalloc">Stopped</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">tcmalloc</span>
+                    <span class="status stopped" id="status-tcmalloc">Stopped</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">jemalloc</span>
+                    <span class="status stopped" id="status-jemalloc">Stopped</span>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Latest Results</h2>
+                <div id="results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let throughputChart, latencyChart, memoryChart;
+
+        function initCharts() {
+            const ctx1 = document.getElementById('throughputChart').getContext('2d');
+            const ctx2 = document.getElementById('latencyChart').getContext('2d');
+            const ctx3 = document.getElementById('memoryChart').getContext('2d');
+
+            throughputChart = new Chart(ctx1, {
+                type: 'bar',
+                data: { labels: ['ptmalloc2', 'tcmalloc', 'jemalloc'], datasets: [{ label: 'allocs/sec', data: [0,0,0], backgroundColor: ['#667eea', '#f093fb', '#4facfe'] }] },
+                options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+            });
+
+            latencyChart = new Chart(ctx2, {
+                type: 'bar',
+                data: { labels: ['ptmalloc2', 'tcmalloc', 'jemalloc'], datasets: [{ label: 'p99 (ns)', data: [0,0,0], backgroundColor: ['#667eea', '#f093fb', '#4facfe'] }] },
+                options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true } } }
+            });
+
+            memoryChart = new Chart(ctx3, {
+                type: 'bar',
+                data: { labels: ['ptmalloc2', 'tcmalloc', 'jemalloc'], datasets: [{ label: 'RSS delta (KB)', data: [0,0,0], backgroundColor: ['#667eea', '#f093fb', '#4facfe'] }] },
+                options: { responsive: true, maintainAspectRatio: true }
+            });
+        }
+
+        function parseResults(text) {
+            const results = { ptmalloc2: {}, tcmalloc: {}, jemalloc: {} };
+            const allocators = ['ptmalloc2', 'tcmalloc', 'jemalloc'];
+            
+            allocators.forEach(alloc => {
+                const throughputMatch = text.match(new RegExp(`${alloc}[^]*?Throughput:\\s+(\\d+(?:\\.\\d+)?)`, 's'));
+                const p99Match = text.match(new RegExp(`${alloc}[^]*?p99:\\s+(\\d+(?:\\.\\d+)?)`, 's'));
+                const rssMatch = text.match(new RegExp(`${alloc}[^]*?RSS delta:\\s+([+-]?\\d+)`, 's'));
+                
+                results[alloc].throughput = throughputMatch ? parseFloat(throughputMatch[1]) : 0;
+                results[alloc].p99 = p99Match ? parseFloat(p99Match[1]) : 0;
+                results[alloc].rss = rssMatch ? parseInt(rssMatch[1]) : 0;
+            });
+            
+            return results;
+        }
+
+        async function loadData() {
+            try {
+                const response = await fetch('/api/results');
+                const data = await response.json();
+                updateCharts(data);
+                updateStatus(data);
+                updateResults(data);
+            } catch (e) {
+                console.error('Failed to load data:', e);
+                // Fallback: try to read from results files
+                loadFromFiles();
+            }
+        }
+
+        function loadFromFiles() {
+            // This would need a backend endpoint to read result files
+            // For now, use placeholder data
+            const placeholder = {
+                ptmalloc2: { throughput: 0, p99: 0, rss: 0 },
+                tcmalloc: { throughput: 0, p99: 0, rss: 0 },
+                jemalloc: { throughput: 0, p99: 0, rss: 0 }
+            };
+            updateCharts(placeholder);
+        }
+
+        function updateCharts(data) {
+            throughputChart.data.datasets[0].data = [
+                data.ptmalloc2.throughput || 0,
+                data.tcmalloc.throughput || 0,
+                data.jemalloc.throughput || 0
+            ];
+            latencyChart.data.datasets[0].data = [
+                data.ptmalloc2.p99 || 0,
+                data.tcmalloc.p99 || 0,
+                data.jemalloc.p99 || 0
+            ];
+            memoryChart.data.datasets[0].data = [
+                data.ptmalloc2.rss || 0,
+                data.tcmalloc.rss || 0,
+                data.jemalloc.rss || 0
+            ];
+            throughputChart.update();
+            latencyChart.update();
+            memoryChart.update();
+        }
+
+        function updateStatus(data) {
+            ['ptmalloc2', 'tcmalloc', 'jemalloc'].forEach(alloc => {
+                const el = document.getElementById(`status-${alloc}`);
+                if (el) {
+                    el.className = 'status ' + (data[alloc]?.throughput > 0 ? 'running' : 'stopped');
+                    el.textContent = data[alloc]?.throughput > 0 ? 'Running' : 'Stopped';
+                }
+            });
+        }
+
+        function updateResults(data) {
+            const resultsDiv = document.getElementById('results');
+            let html = '';
+            ['ptmalloc2', 'tcmalloc', 'jemalloc'].forEach(alloc => {
+                const d = data[alloc] || {};
+                html += `<div class="metric">
+                    <span class="metric-label">${alloc}</span>
+                    <span class="metric-value">${d.throughput?.toLocaleString() || 0} allocs/sec</span>
+                </div>`;
+            });
+            resultsDiv.innerHTML = html;
+        }
+
+        async function runBenchmark() {
+            try {
+                const response = await fetch('/api/run', { method: 'POST' });
+                const result = await response.json();
+                alert(result.message || 'Benchmark started');
+                setTimeout(loadData, 5000);
+            } catch (e) {
+                alert('Failed to start benchmark. Make sure the backend is running.');
+            }
+        }
+
+        initCharts();
+        loadData();
+        setInterval(loadData, 10000); // Auto-refresh every 10 seconds
+    </script>
+</body>
+</html>

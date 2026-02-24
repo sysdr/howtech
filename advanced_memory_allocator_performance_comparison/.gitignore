@@ -1,0 +1,16 @@
+# Override parent .gitignore - this project's build/ contains source files
+# Allow build directory (contains source files, not build artifacts)
+!build/
+
+# But ignore actual build artifacts within build/
+build/bench_*
+build/*.o
+build/__pycache__/
+build/*.pyc
+
+# Ignore results directory (generated output)
+results/
+
+# Ignore log files
+*.log
+
