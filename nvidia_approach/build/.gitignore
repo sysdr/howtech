@@ -1,0 +1,6 @@
+# Ignore compiled binaries (use 'make clean' to remove)
+uio_sim
+iommu_inspect
+latency_compare
+qualification_scope
+
