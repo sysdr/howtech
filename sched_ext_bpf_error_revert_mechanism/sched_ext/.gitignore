@@ -1,0 +1,8 @@
+## Build outputs
+src/scx_task_migration
+src/scx_revert_monitor
+src/*.o
+
+## OS/editor noise
+.DS_Store
+*.swp
