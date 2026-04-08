@@ -1,0 +1,4 @@
+/.cleanup_state
+/linux/
+/net_attr
+/net_attr.bpf.o
