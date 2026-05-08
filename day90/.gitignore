@@ -1,0 +1,18 @@
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+/src/dsq_sim
+/src/*.o
+/src/*.obj
+/src/*.d
+
+# Logs / temp
+*.log
+*.tmp
